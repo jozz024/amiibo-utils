@@ -74,7 +74,7 @@ def gen_random_bytes(byte_amt: int):
 def get_character_from_api(character):
     api = requests.get('https://amiiboapi.com/api/amiibo').json()["amiibo"]
     for characters in api:
-        if character == characters["character"]:
+        if character.lower() == characters["character"].lower():
             return characters["head"] + characters["tail"]
 
 def main(character_name, path):
@@ -96,7 +96,7 @@ def main(character_name, path):
 
 if __name__ == "__main__":
     try:
-        main("Mario", "mario.bin")
+        main(sys.argv[1], sys.argv[2])
 
     except IndexError:
         print("usage: gen.exe <character-name> <out-path>")
