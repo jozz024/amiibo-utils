@@ -1,4 +1,5 @@
 # making an amiibo bin from scratch
+import difflib
 import random
 import amiibo
 import sys
@@ -36,7 +37,7 @@ def generate_bin():
     # last write date
     dump.data[0x1A:0x1C] = bytes.fromhex(gen_random_bytes(2))
     # owner mii
-    dump.data[0xA0:0x100] = get_mii()
+    # dump.data[0xA0:0x100] = get_mii()
     # application titleid
     dump.data[0x100:0x108] = bytes.fromhex('01006A803016E000')
     # 2nd write counter
@@ -72,15 +73,27 @@ def gen_random_bytes(byte_amt: int):
     return generated_bytes
 
 def get_character_from_api(character):
-    api = requests.get('https://amiiboapi.com/api/amiibo').json()["amiibo"]
+    api = requests.get('https://amiiboapi.com/api/amiibo/?showusage').json()["amiibo"]
+    char_list = []
     for characters in api:
-        if character.lower() == characters["character"].lower():
-            return characters["head"] + characters["tail"]
+        if len(characters["gamesSwitch"]) > 0:
+            for games in characters["gamesSwitch"]:
+                if games["gameName"] == "Super Smash Bros. Ultimate":
+                    if games["amiiboUsage"][0]["Usage"] == "Battle and train up a computer-controlled Figure Player of the character":
+                        char_list.append(characters["character"])
+
+    match = difflib.get_close_matches(character, char_list)
+
+    for characters in api:
+        try:
+            if characters["character"] == match[0]:
+                return characters["head"] + characters["tail"]
+        except IndexError:
+            if characters["character"].lower() == character.lower():
+                return characters["head"] + characters["tail"]
+
 
 def main(character_name, path):
-    with open(os.path.join(os.getcwd(), "key_retail.bin"), "rb") as fp:
-        keys = amiibo.AmiiboMasterKey.from_combined_bin(fp.read())
-
     raw_bin = generate_bin()
 
     # character
